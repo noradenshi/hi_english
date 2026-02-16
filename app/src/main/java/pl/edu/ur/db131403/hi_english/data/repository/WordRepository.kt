@@ -6,14 +6,11 @@ import pl.edu.ur.db131403.hi_english.data.local.WordEntity
 class WordRepository(
     private val dao: WordDao
 ) {
-    fun getAllWords() = dao.getAllWords()
-
-    fun getWordsByTag(tag: String) = dao.getWordsByTag(tag)
+    fun getAllA1Words() = dao.getAllA1Words()
 
     fun searchWords(query: String) = dao.searchWords(query)
 
-    suspend fun insert(word: WordEntity) {
-        dao.insertWord(word)
-    }
+//    suspend fun insert(word: WordEntity) {
+//        dao.insertWord(word)
+//    }
 }
-

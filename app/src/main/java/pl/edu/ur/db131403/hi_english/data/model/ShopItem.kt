@@ -1,9 +1,9 @@
 package pl.edu.ur.db131403.hi_english.data.model
 
-// Simple data class for shop items
 data class ShopItem(
-    val id: Int,
+    val id: String,
     val name: String,
-    val price: String,
+    val cost: Int,
+    val category: String,
     val imageRes: Int
 )

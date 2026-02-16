@@ -7,16 +7,14 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WordDao {
+    // Get all A1 words
+    @Query("SELECT * FROM words WHERE cefr = 'A1' ORDER BY word ASC")
+    fun getAllA1Words(): Flow<List<WordEntity>>
 
-    @Insert
-    suspend fun insertWord(word: WordEntity)
+    // Get only words ready for the "Kids Mode" (those with translations)
+    @Query("SELECT * FROM words WHERE translation_pl != '' ORDER BY word ASC")
+    fun getKidsDictionary(): Flow<List<WordEntity>>
 
-    @Query("SELECT * FROM words")
-    fun getAllWords(): Flow<List<WordEntity>>
-
-    @Query("SELECT * FROM words WHERE tag = :tag")
-    fun getWordsByTag(tag: String): Flow<List<WordEntity>>
-
-    @Query("SELECT * FROM words WHERE word LIKE '%' || :query || '%'")
+    @Query("SELECT * FROM words WHERE word LIKE :query OR translation_pl LIKE :query ORDER BY word ASC")
     fun searchWords(query: String): Flow<List<WordEntity>>
 }
