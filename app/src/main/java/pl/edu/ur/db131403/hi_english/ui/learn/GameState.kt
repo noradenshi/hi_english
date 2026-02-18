@@ -1,6 +1,6 @@
 package pl.edu.ur.db131403.hi_english.ui.learn
 
-import pl.edu.ur.db131403.hi_english.data.local.WordEntity
+import pl.edu.ur.db131403.hi_english.data.model.WordEntity
 
 sealed class GameState {
     // 1. Wybór słowa do obrazka

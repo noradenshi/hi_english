@@ -40,61 +40,85 @@ class StoreViewModel(
 
     suspend fun seedDatabase() {
         val initialItems = listOf(
-            // CZAPKI
             StoreItem(
-                name = "Czerwona Czapka",
-                category = ItemCategories.HAT,
-                price = 50,
-                imageResName = "hat_red"
-            ),
-            StoreItem(
-                name = "Czapka Zimowa",
-                category = ItemCategories.HAT,
-                price = 120,
-                imageResName = "hat_winter"
-            ),
-
-            // OKULARY
-            StoreItem(
-                name = "Okulary Przeciwsłoneczne",
-                category = ItemCategories.GLASSES,
-                price = 80,
-                imageResName = "glasses_sun"
-            ),
-            StoreItem(
-                name = "Monokl",
-                category = ItemCategories.GLASSES,
+                name = "Szary Kot",
+                category = ItemCategories.PET_SKIN,
                 price = 300,
-                imageResName = "glasses_monocle"
+                imageResName = "cat_gray"
+            ),
+            StoreItem(
+                name = "Rudy Kot",
+                category = ItemCategories.PET_SKIN,
+                price = 300,
+                imageResName = "cat_orange"
+            ),
+            StoreItem(
+                name = "Brązowy Pies",
+                category = ItemCategories.PET_SKIN,
+                price = 0,
+                isPurchased = true,
+                imageResName = "dog_brown"
+            ),
+            StoreItem(
+                name = "Łaciaty Pies",
+                category = ItemCategories.PET_SKIN,
+                price = 400,
+                imageResName = "dog_dotted"
             ),
 
-            // SKÓRKI ZWIERZAKA
             StoreItem(
-                name = "Złoty Futro",
-                category = ItemCategories.PET_SKIN,
-                price = 1000,
-                imageResName = "skin_gold"
+                name = "Żółta Czapka",
+                category = ItemCategories.HAT,
+                price = 100,
+                imageResName = "hat_yellow"
             ),
             StoreItem(
-                name = "Panda",
-                category = ItemCategories.PET_SKIN,
-                price = 500,
-                imageResName = "skin_panda"
+                name = "Okulary",
+                category = ItemCategories.GLASSES,
+                price = 150,
+                imageResName = "sunglasses"
             ),
 
-            // ŚCIANY / TŁO
             StoreItem(
-                name = "Tapeta w Kwiaty",
-                category = ItemCategories.WALL_SKIN,
+                name = "Niebieski Szalik",
+                category = ItemCategories.SCARF,
+                price = 80,
+                imageResName = "scarf_blue"
+            ),
+            StoreItem(
+                name = "Zielony Szalik",
+                category = ItemCategories.SCARF,
+                price = 80,
+                imageResName = "scarf_green"
+            ),
+            StoreItem(
+                name = "Fioletowy Szalik",
+                category = ItemCategories.SCARF,
+                price = 80,
+                imageResName = "scarf_purple"
+            ),
+
+            StoreItem(
+                name = "Niebieski Sweter",
+                category = ItemCategories.SWEATER,
                 price = 200,
-                imageResName = "wall_flowers"
+                imageResName = "sweater_blue"
             ),
             StoreItem(
-                name = "Ciemny Las",
-                category = ItemCategories.WALL_SKIN,
-                price = 250,
-                imageResName = "wall_forest"
-            )
+                name = "Zielony Sweter",
+                category = ItemCategories.SWEATER,
+                price = 200,
+                imageResName = "sweater_green"
+            ),
+            StoreItem(
+                name = "Fioletowy Sweter",
+                category = ItemCategories.SWEATER,
+                price = 200,
+                imageResName = "sweater_purple"
+            ),
+
+            // TODO WALL_SKIN
+
         )
         storeDao.insertInitialItems(initialItems)
     }
@@ -105,6 +129,11 @@ class StoreViewModel(
                 buyItem(item)
             } else {
                 if (isEquipped) {
+                    // Cannot unequip PET_SKIN
+                    if (item.category == ItemCategories.PET_SKIN) {
+                        return@launch
+                    }
+
                     storeDao.unequipCategory(item.category)
                 } else {
                     storeDao.equipItem(EquippedItem(item.category, item.id))
@@ -117,7 +146,17 @@ class StoreViewModel(
         val currentPoints = profileRepository.getCurrentPoints()
         if (currentPoints >= item.price) {
             profileRepository.addPoints(-item.price)
-            storeDao.updateItemPurchase(item.copy(isPurchased = true))
+            storeDao.updateItem(item.copy(isPurchased = true))
+        }
+    }
+
+    fun sellItem(item: StoreItem) {
+        viewModelScope.launch {
+            if (!item.isPurchased) return@launch
+
+            storeDao.updateItem(item.copy(isPurchased = false))
+            storeDao.unequipCategory(item.category)
+            profileRepository.debugUpdatePoints(profileRepository.getCurrentPoints() + item.price)
         }
     }
 }

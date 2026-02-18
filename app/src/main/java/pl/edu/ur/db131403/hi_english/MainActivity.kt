@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
@@ -62,8 +63,8 @@ import kotlin.getValue
 class MainActivity : ComponentActivity() {
     private val dictionaryDb by lazy { DictionaryDatabase.getDatabase(this) }
     private val inventoryDb by lazy { InventoryDatabase.getDatabase(this) }
-    private val wordRepository by lazy { WordRepository(dictionaryDb.wordDao()) }
-    private val profileRepository by lazy { ProfileRepository(applicationContext,) }
+    private val wordRepository by lazy { WordRepository(dictionaryDb.wordDao(), this) }
+    private val profileRepository by lazy { ProfileRepository(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,6 +80,10 @@ class MainActivity : ComponentActivity() {
         manager.createNotificationChannel(channel)
 
         setContent {
+            androidx.compose.runtime.LaunchedEffect(Unit) {
+                wordRepository.checkAndInitializeDatabase()
+            }
+
             HiEnglishTheme {
                 HiEnglishApp(
                     wordRepository,
@@ -99,7 +104,7 @@ fun HiEnglishApp(
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.EXERCISES) }
 
-    androidx.activity.compose.BackHandler(enabled = currentDestination != AppDestinations.EXERCISES) {
+    BackHandler(enabled = currentDestination != AppDestinations.EXERCISES) {
         currentDestination = AppDestinations.EXERCISES
     }
 
@@ -161,8 +166,10 @@ fun HiEnglishApp(
                 when (currentDestination) {
                     AppDestinations.SHOP -> StorePage(
                         items = storeItems,
-                        points= points,
-                        onBuy = { item -> storeViewModel.handleItemClick(item, false) }
+                        points = points,
+                        profileRepository = profileRepository,
+                        onBuy = { item -> storeViewModel.handleItemClick(item, false) },
+                        onSell = { item -> storeViewModel.sellItem(item) },
                     )
 
                     AppDestinations.PET -> HouseScreen(
@@ -180,7 +187,11 @@ fun HiEnglishApp(
                         )
                     }
 
-                    AppDestinations.DICTIONARY -> DictionaryScreen()
+                    AppDestinations.DICTIONARY -> DictionaryScreen(
+                        profileRepository,
+                        wordRepository
+                    )
+
                     AppDestinations.SETTINGS -> SettingsScreen(
                         profileRepository,
                         storeDao

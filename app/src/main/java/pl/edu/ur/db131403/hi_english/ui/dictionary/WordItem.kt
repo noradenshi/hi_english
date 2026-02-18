@@ -1,5 +1,6 @@
 package pl.edu.ur.db131403.hi_english.ui.dictionary
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,11 +25,89 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import pl.edu.ur.db131403.hi_english.data.local.WordEntity
+import pl.edu.ur.db131403.hi_english.data.model.WordEntity
+import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 
-@OptIn(ExperimentalLayoutApi::class) // Potrzebne dla FlowRow
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WordItem(word: WordEntity, onClick: () -> Unit) {
+fun SwipeableWordItem(
+    word: WordEntity,
+    isRoot: Boolean,
+    onEdit: (WordEntity) -> Unit,
+    onToggleVisibility: (WordEntity) -> Unit,
+    onClick: () -> Unit
+) {
+    if (!isRoot) {
+        if (word.isVisible) WordItem(word, onClick)
+        return
+    }
+
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> {
+                onEdit(word)
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.EndToStart -> {
+                onToggleVisibility(word)
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.Settled -> { }
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = true,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            val color = when (dismissState.dismissDirection) {
+                SwipeToDismissBoxValue.StartToEnd -> Color(0xFF2196F3) // Niebieski dla edycji
+                SwipeToDismissBoxValue.EndToStart -> if (word.isVisible) Color.Gray else Color(0xFF4CAF50) // Szary/Zielony
+                else -> Color.Transparent
+            }
+            val alignment = when (dismissState.dismissDirection) {
+                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                else -> Alignment.Center
+            }
+            val icon = when (dismissState.dismissDirection) {
+                SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Edit
+                SwipeToDismissBoxValue.EndToStart -> if (word.isVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                else -> null
+            }
+
+            Box(
+                Modifier.fillMaxSize().padding(vertical = 4.dp).background(color, RoundedCornerShape(12.dp)).padding(horizontal = 20.dp),
+                contentAlignment = alignment
+            ) {
+                icon?.let { Icon(it, contentDescription = null, tint = Color.White) }
+            }
+        },
+        content = {
+            // Dodajemy przezroczystość, jeśli słowo jest ukryte
+            Box(modifier = Modifier.graphicsLayer(alpha = if (word.isVisible) 1f else 0.5f)) {
+                WordItem(word, onClick)
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun WordItem(
+    word: WordEntity,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()

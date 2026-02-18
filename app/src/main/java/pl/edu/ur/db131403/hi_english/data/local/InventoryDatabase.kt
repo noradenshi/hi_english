@@ -8,8 +8,7 @@ import pl.edu.ur.db131403.hi_english.data.model.EquippedItem
 import pl.edu.ur.db131403.hi_english.data.model.ItemCategories
 import pl.edu.ur.db131403.hi_english.data.model.StoreItem
 
-// Rejestrujemy obie encje: StoreItem oraz EquippedItem
-@Database(entities = [StoreItem::class, EquippedItem::class], version = 1, exportSchema = false)
+@Database(entities = [StoreItem::class, EquippedItem::class], version = 2, exportSchema = false)
 abstract class InventoryDatabase : RoomDatabase() {
 
     abstract fun storeDao(): StoreDao
@@ -23,9 +22,9 @@ abstract class InventoryDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     InventoryDatabase::class.java,
-                    "inventory_database" // To jest Twoja nowa, bezpieczna baza
+                    "inventory_database"
                 )
-                    // Opcjonalnie: .addCallback(MIGRATION_CALLBACK)
+                    .fallbackToDestructiveMigration(true)
                     .build()
                 INSTANCE = instance
                 instance

@@ -30,6 +30,15 @@ class ProfileRepository(private val context: Context) {
     val totalExercises = MutableStateFlow(prefs.getInt("total_exercises", 0))
     val dailyMinutes = MutableStateFlow(prefs.getInt("daily_minutes", 0))
 
+    private val _isRootAuthenticated = MutableStateFlow(prefs.getBoolean("is_root_authenticated", false))
+    val isRootAuthenticated: Flow<Boolean> = _isRootAuthenticated
+
+    init {
+        // Resetujemy stan Root przy każdym uruchomieniu aplikacji (init repozytorium)
+        setRootAuthenticated(false)
+        checkAndResetDailyProgress()
+    }
+
     // Ta funkcja jest teraz jedynym źródłem prawdy o czasie
     fun addMinuteOfStudy() {
         val current = prefs.getInt("daily_minutes", 0)
@@ -200,6 +209,42 @@ class ProfileRepository(private val context: Context) {
     fun getRootPassword(): String {
         return prefs.getString("root_password", "root123") ?: "root123"
     }
+
+    fun setRootAuthenticated(authenticated: Boolean) {
+        prefs.edit {
+            putBoolean("is_root_authenticated", authenticated)
+        }
+        _isRootAuthenticated.value = authenticated
+    }
+
+    fun checkRootPassword(password: String): Boolean {
+        val isValid = password == getRootPassword()
+        if (isValid) {
+            setRootAuthenticated(true)
+        }
+        return isValid
+    }
+
+    fun logoutRoot() {
+        setRootAuthenticated(false)
+    }
+
+    fun debugUpdatePoints(newAmount: Int) {
+        prefs.edit { putInt("points", newAmount) }
+        _pointsFlow.value = newAmount
+    }
+
+    fun debugUpdateTotalPointsEver(newAmount: Int) {
+        prefs.edit { putInt("total_points_ever", newAmount) }
+        _totalPointsEverFlow.value = newAmount
+    }
+
+    fun debugUpdateGamesCompleted(newAmount: Int) {
+        prefs.edit { putInt("games_today", newAmount) }
+        _gamesCompletedFlow.value = newAmount
+    }
+
+    fun getGamesCompletedToday(): Int = prefs.getInt("games_today", 0)
 
     fun getAllPrefs(): Map<String, *> {
         return prefs.all

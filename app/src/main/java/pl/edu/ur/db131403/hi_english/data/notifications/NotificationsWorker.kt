@@ -51,8 +51,8 @@ class NotificationWorker(
             .setContentTitle("Hi English!")
             .setContentText("Czas na codzienną dawkę nauki! 🐶")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentIntent(pendingIntent) // Przypisujemy akcję do kliknięcia
-            .setAutoCancel(true) // Powiadomienie zniknie po kliknięciu
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
             .build()
 
         notificationManager.notify(1, notification)

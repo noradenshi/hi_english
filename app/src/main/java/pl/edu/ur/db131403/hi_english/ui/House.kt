@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.Checkroom
 import androidx.compose.material.icons.outlined.Pets
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -55,66 +59,86 @@ fun HouseScreen(
 ) {
     var showCustomizer by remember { mutableStateOf(false) }
 
-    // Znajdujemy obiekty StoreItem na podstawie ID z mapy ekwipunku
     val equippedHat = storeItems.find { it.id == equippedMap[ItemCategories.HAT] }
     val equippedGlasses = storeItems.find { it.id == equippedMap[ItemCategories.GLASSES] }
     val equippedWall = storeItems.find { it.id == equippedMap[ItemCategories.WALL_SKIN] }
     val equippedPetSkin = storeItems.find { it.id == equippedMap[ItemCategories.PET_SKIN] }
+    val equippedScarf = storeItems.find { it.id == equippedMap[ItemCategories.SCARF] }
+    val equippedSweater = storeItems.find { it.id == equippedMap[ItemCategories.SWEATER] }
 
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Box(modifier = Modifier.fillMaxSize()) {
         // --- WARSTWA 1: TŁO (WALL_SKIN) ---
         if (equippedWall != null) {
-            val wallResId = context.resources.getIdentifier(equippedWall.imageResName, "drawable", context.packageName)
-            Image(
-                painter = painterResource(id = if (wallResId != 0) wallResId else android.R.drawable.ic_menu_gallery),
+            coil.compose.AsyncImage(
+                model = "file:///android_asset/images/${equippedWall.imageResName}.png",
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                filterQuality = androidx.compose.ui.graphics.FilterQuality.None
             )
         } else {
             Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant))
         }
 
-        // --- WARSTWA 2: ZWIERZAK I AKCESORIA ---
+        // --- WARSTWA 2: ZWIERZAK I UBRANIA ---
+        // Box nakłada elementy jeden na drugi w kolejności kodu
         Box(
-            modifier = Modifier.align(Alignment.Center).size(250.dp),
+            modifier = Modifier.align(Alignment.Center).size(400.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Ciało zwierzaka (PET_SKIN lub domyślny)
-            val petResId = if (equippedPetSkin != null) {
-                context.resources.getIdentifier(equippedPetSkin.imageResName, "drawable", context.packageName)
-            } else 0
-
-            if (petResId != 0) {
-                Image(painter = painterResource(id = petResId), contentDescription = null, modifier = Modifier.fillMaxSize())
+            // 1. Ciało (Baza)
+            if (equippedPetSkin != null) {
+                coil.compose.AsyncImage(
+                    model = "file:///android_asset/images/${equippedPetSkin.imageResName}.png",
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    filterQuality = androidx.compose.ui.graphics.FilterQuality.None
+                )
             } else {
-                Icon(Icons.Outlined.Pets, null, modifier = Modifier.fillMaxSize(0.7f), tint = MaterialTheme.colorScheme.primary)
+                // Jeśli nie ma skina, pokazujemy ikonę lub domyślny plik
+                Icon(Icons.Outlined.Pets, null, modifier = Modifier.size(100.dp), tint = MaterialTheme.colorScheme.outline)
             }
 
-            // Okulary (Warstwa nad zwierzakiem)
-            equippedGlasses?.let { glasses ->
-                val resId = context.resources.getIdentifier(glasses.imageResName, "drawable", context.packageName)
-                if (resId != 0) {
-                    Image(
-                        painter = painterResource(id = resId),
-                        contentDescription = null,
-                        modifier = Modifier.size(100.dp).offset(y = (-10).dp)
-                    )
-                }
+            // 2. Sweter (Pod szalikiem, nad ciałem)
+            equippedSweater?.let { item ->
+                coil.compose.AsyncImage(
+                    model = "file:///android_asset/images/${item.imageResName}.png",
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    filterQuality = androidx.compose.ui.graphics.FilterQuality.None
+                )
             }
 
-            // Czapka (Najwyższa warstwa)
-            equippedHat?.let { hat ->
-                val resId = context.resources.getIdentifier(hat.imageResName, "drawable", context.packageName)
-                if (resId != 0) {
-                    Image(
-                        painter = painterResource(id = resId),
-                        contentDescription = null,
-                        modifier = Modifier.size(120.dp).align(Alignment.TopCenter).offset(y = (-30).dp)
-                    )
-                }
+            // 3. Szalik
+            equippedScarf?.let { item ->
+                coil.compose.AsyncImage(
+                    model = "file:///android_asset/images/${item.imageResName}.png",
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    filterQuality = androidx.compose.ui.graphics.FilterQuality.None
+                )
+            }
+
+            // 4. Okulary
+            equippedGlasses?.let { item ->
+                coil.compose.AsyncImage(
+                    model = "file:///android_asset/images/${item.imageResName}.png",
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    filterQuality = androidx.compose.ui.graphics.FilterQuality.None
+                )
+            }
+
+            // 5. Czapka (Na samym wierzchu)
+            equippedHat?.let { item ->
+                coil.compose.AsyncImage(
+                    model = "file:///android_asset/images/${item.imageResName}.png",
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    filterQuality = androidx.compose.ui.graphics.FilterQuality.None
+                )
             }
         }
 
@@ -146,27 +170,47 @@ fun CustomizerSheet(
     onEquipToggle: (StoreItem, Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-            Text("Twoja Szafa", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                "Twoja Szafa",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
             Spacer(Modifier.height(16.dp))
 
             if (ownedItems.isEmpty()) {
-                Text("Nic tu jeszcze nie ma. Kup coś w sklepie!", modifier = Modifier.padding(vertical = 32.dp))
-            }
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Nic tu jeszcze nie ma. Kup coś w sklepie!")
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 90.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(ownedItems) { item ->
+                        val isEquipped = equippedMap[item.category] == item.id
 
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 32.dp)
-            ) {
-                items(ownedItems) { item ->
-                    val isEquipped = equippedMap[item.category] == item.id
-
-                    WardrobeItemCard(
-                        item = item,
-                        isEquipped = isEquipped,
-                        onClick = { onEquipToggle(item, isEquipped) }
-                    )
+                        WardrobeItemCard(
+                            item = item,
+                            isEquipped = isEquipped,
+                            onClick = { onEquipToggle(item, isEquipped) }
+                        )
+                    }
                 }
             }
         }
@@ -175,9 +219,6 @@ fun CustomizerSheet(
 
 @Composable
 fun WardrobeItemCard(item: StoreItem, isEquipped: Boolean, onClick: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val resId = context.resources.getIdentifier(item.imageResName, "drawable", context.packageName)
-
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
@@ -186,10 +227,11 @@ fun WardrobeItemCard(item: StoreItem, isEquipped: Boolean, onClick: () -> Unit) 
         modifier = Modifier.size(90.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Image(
-                painter = painterResource(id = if (resId != 0) resId else android.R.drawable.ic_menu_report_image),
+            coil.compose.AsyncImage(
+                model = "file:///android_asset/images/${item.imageResName}.png",
                 contentDescription = null,
-                modifier = Modifier.size(60.dp).padding(8.dp)
+                modifier = Modifier.size(70.dp).padding(8.dp),
+                filterQuality = androidx.compose.ui.graphics.FilterQuality.None
             )
             if (isEquipped) {
                 Icon(
@@ -200,18 +242,5 @@ fun WardrobeItemCard(item: StoreItem, isEquipped: Boolean, onClick: () -> Unit) 
                 )
             }
         }
-    }
-}
-
-@Composable
-fun StatusBar(label: String, value: Float, color: Color) {
-    Column(modifier = Modifier.width(120.dp)) {
-        Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-        LinearProgressIndicator(
-            progress = { value },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-            color = color,
-            trackColor = color.copy(alpha = 0.2f),
-        )
     }
 }

@@ -1,4 +1,4 @@
-package pl.edu.ur.db131403.hi_english.data.local
+package pl.edu.ur.db131403.hi_english.data.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -21,5 +21,8 @@ data class WordEntity(
     val description: String?,
 
     @ColumnInfo(name = "image_res")
-    val imageRes: String?
+    val imageRes: String?,
+
+    @ColumnInfo(name = "is_visible")
+    val isVisible: Boolean = true
 )

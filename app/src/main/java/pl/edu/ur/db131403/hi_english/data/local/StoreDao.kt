@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import pl.edu.ur.db131403.hi_english.data.model.EquippedItem
@@ -20,7 +19,7 @@ interface StoreDao {
     suspend fun insertInitialItems(items: List<StoreItem>)
 
     @Update
-    suspend fun updateItemPurchase(item: StoreItem)
+    suspend fun updateItem(item: StoreItem)
 
     // --- Zarządzanie Ekwipunkiem ---
     @Query("SELECT * FROM equipped_items")

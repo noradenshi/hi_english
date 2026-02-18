@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material3.*
@@ -20,11 +21,26 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import pl.edu.ur.db131403.hi_english.data.local.WordEntity
+import pl.edu.ur.db131403.hi_english.data.model.WordEntity
+import pl.edu.ur.db131403.hi_english.data.repository.ProfileRepository
+import pl.edu.ur.db131403.hi_english.data.repository.WordRepository
 
 @OptIn(ExperimentalFoundationApi::class) // Required for stickyHeader
 @Composable
-fun DictionaryScreen(viewModel: WordViewModel = viewModel()) {
+fun DictionaryScreen(
+    profileRepository: ProfileRepository,
+    wordRepository: WordRepository
+) {
+    val viewModel: WordViewModel = viewModel(
+        factory = WordViewModel.Factory(wordRepository)
+    )
+
+    val isRoot by profileRepository.isRootAuthenticated.collectAsState(initial = false)
+
+    LaunchedEffect(isRoot) {
+        viewModel.updateRootMode(isRoot)
+    }
+
     val words by viewModel.words.collectAsState()
     val query by viewModel.searchQuery.collectAsState()
 
@@ -34,108 +50,173 @@ fun DictionaryScreen(viewModel: WordViewModel = viewModel()) {
 
     // Group words by their first letter for the headers
     val groupedWords = remember(words) {
-        words.groupBy { it.word.first().uppercaseChar() }
+        words.groupBy {wordEntity ->
+            wordEntity.word.trim().firstOrNull()?.uppercaseChar() ?: '#'
+        }
             .toSortedMap()
     }
 
+    var showAddDialog by remember { mutableStateOf(false) }
+    var wordToEdit by remember { mutableStateOf<WordEntity?>(null) }
     var selectedWord by remember { mutableStateOf<WordEntity?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp)) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { viewModel.onSearchChange(it) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    placeholder = { Text("Search words...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize()
+    Scaffold(
+        floatingActionButton = {
+            if (isRoot) {
+                FloatingActionButton(
+                    onClick = { showAddDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
-                    groupedWords.forEach { (initial, wordsInGroup) ->
-                        // THE INDICATOR: Sticky Header for each letter
+                    Icon(Icons.Default.Add, contentDescription = "Dodaj słowo")
+                }
+            }
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { viewModel.onSearchChange(it) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            placeholder = { Text("Search words...") },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            shape = RoundedCornerShape(12.dp)
+                        )
 
-                        stickyHeader {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                color = MaterialTheme.colorScheme.surfaceVariant
-                            ) {
-                                Text(
-                                    text = initial.toString(),
-                                    modifier = Modifier.padding(
-                                        horizontal = 16.dp,
-                                        vertical = 4.dp
-                                    ),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            groupedWords.forEach { (initial, wordsInGroup) ->
+                                // THE INDICATOR: Sticky Header for each letter
+
+                                stickyHeader {
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    ) {
+                                        Text(
+                                            text = initial.toString(),
+                                            modifier = Modifier.padding(
+                                                horizontal = 16.dp,
+                                                vertical = 4.dp
+                                            ),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+
+                                items(
+                                    wordsInGroup,
+                                    key = { it.id!! }
+                                ) { word ->
+                                    SwipeableWordItem(
+                                        word = word,
+                                        isRoot = isRoot,
+                                        onEdit = { wordToEdit = it },
+                                        onToggleVisibility = { viewModel.toggleVisibility(it) },
+                                        onClick = { selectedWord = word }
+                                    )
+                                }
                             }
                         }
+                    }
 
-                        items(wordsInGroup) { word ->
-                            WordItem(
-                                word = word,
-                                onClick = {
-                                    selectedWord = word
-                                }
+                    // Alphabet Slider
+                    Column(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(end = 8.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        alphabet.forEach { letter ->
+                            Text(
+                                text = letter.toString(),
+                                modifier = Modifier
+                                    .clickable {
+                                        val wordsInGroupsBefore =
+                                            groupedWords.filterKeys { it < letter }.values.sumOf { it.size }
+                                        val headersBefore = groupedWords.keys.count { it < letter }
+
+                                        val totalScrollIndex = wordsInGroupsBefore + headersBefore
+
+                                        if (groupedWords.containsKey(letter)) {
+                                            coroutineScope.launch {
+                                                listState.animateScrollToItem(totalScrollIndex)
+                                            }
+                                        }
+                                    }
+                                    .padding(vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (words.any {
+                                            it.word.startsWith(
+                                                letter,
+                                                ignoreCase = true
+                                            )
+                                        })
+                                        MaterialTheme.colorScheme.primary
+                                    else Color.Gray.copy(alpha = 0.5f)
+                                )
                             )
                         }
                     }
-                }
-            }
 
-            // Alphabet Slider
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(end = 8.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                alphabet.forEach { letter ->
-                    Text(
-                        text = letter.toString(),
-                        modifier = Modifier
-                            .clickable {
-                                val wordsInGroupsBefore =
-                                    groupedWords.filterKeys { it < letter }.values.sumOf { it.size }
-                                val headersBefore = groupedWords.keys.count { it < letter }
-
-                                val totalScrollIndex = wordsInGroupsBefore + headersBefore
-
-                                if (groupedWords.containsKey(letter)) {
-                                    coroutineScope.launch {
-                                        listState.animateScrollToItem(totalScrollIndex)
-                                    }
-                                }
-                            }
-                            .padding(vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = if (words.any { it.word.startsWith(letter, ignoreCase = true) })
-                                MaterialTheme.colorScheme.primary
-                            else Color.Gray.copy(alpha = 0.5f)
+                    // Show the popup if a word is selected
+                    selectedWord?.let { word ->
+                        WordInfoDialog(
+                            word = word,
+                            onDismiss = { selectedWord = null }
                         )
+                    }
+                }
+
+                selectedWord?.let {
+                    WordInfoDialog(word = it, onDismiss = { selectedWord = null })
+                }
+
+                wordToEdit?.let {
+                    EditWordDialog(
+                        word = it,
+                        onDismiss = { wordToEdit = null },
+                        onConfirm = { updated -> viewModel.updateWord(updated) },
+                        onDelete = { wordToDelete -> viewModel.deleteWord(wordToDelete) }
                     )
                 }
             }
+        }
 
-            // Show the popup if a word is selected
-            selectedWord?.let { word ->
-                WordInfoDialog(
-                    word = word,
-                    onDismiss = { selectedWord = null }
-                )
-            }
+        if (showAddDialog) {
+            EditWordDialog(
+                word = WordEntity(
+                    id = null,
+                    word = "",
+                    pos = null,
+                    cefr = "A1",
+                    translationPl = "",
+                    description = null,
+                    imageRes = null,
+                    isVisible = true
+                ),
+                onDismiss = { showAddDialog = false },
+                onConfirm = { newWord ->
+                    viewModel.insertWord(newWord)
+                    showAddDialog = false
+                },
+                onDelete = { }
+            )
         }
     }
 }
