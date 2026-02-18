@@ -22,8 +22,8 @@ sealed class GameState {
     data class ScrambledLetters(
         val word: String,
         val translation: String,
-        val scrambledLetters: List<LetterSlot>, // ZMIANA: List<LetterSlot> zamiast List<Char>
-        val currentGuess: String = ""
+        val scrambledLetters: List<LetterSlot>,
+        val guessedSlots: Map<Int, LetterSlot> = emptyMap()
     ) : GameState()
 }
 

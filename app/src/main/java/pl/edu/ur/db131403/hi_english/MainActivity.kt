@@ -1,5 +1,7 @@
 package pl.edu.ur.db131403.hi_english
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,7 +25,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -36,7 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import pl.edu.ur.db131403.hi_english.ui.learn.LearningModule
 import pl.edu.ur.db131403.hi_english.ui.dictionary.DictionaryScreen
-import pl.edu.ur.db131403.hi_english.ui.shop.ShopPage
+import pl.edu.ur.db131403.hi_english.ui.store.StorePage
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.Book
@@ -44,26 +45,46 @@ import androidx.compose.material.icons.outlined.MonetizationOn
 import androidx.compose.material.icons.outlined.Pets
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingBag
-import pl.edu.ur.db131403.hi_english.data.local.AppDatabase
-import pl.edu.ur.db131403.hi_english.data.model.EquippedItems
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import pl.edu.ur.db131403.hi_english.data.local.DictionaryDatabase
+import pl.edu.ur.db131403.hi_english.data.local.InventoryDatabase
+import pl.edu.ur.db131403.hi_english.data.local.StoreDao
 import pl.edu.ur.db131403.hi_english.data.repository.WordRepository
 import pl.edu.ur.db131403.hi_english.data.repository.ProfileRepository
 import pl.edu.ur.db131403.hi_english.ui.HouseScreen
-import pl.edu.ur.db131403.hi_english.ui.SettingsScreen
+import pl.edu.ur.db131403.hi_english.ui.settings.SettingsScreen
+import pl.edu.ur.db131403.hi_english.ui.store.StoreViewModel
+import pl.edu.ur.db131403.hi_english.ui.store.StoreViewModelFactory
 import kotlin.getValue
 
 class MainActivity : ComponentActivity() {
-    private val database by lazy { AppDatabase.getDatabase(this) }
-    private val wordRepository by lazy { WordRepository(database.wordDao()) }
-    private val profileRepository by lazy { ProfileRepository(database.profileDao()) }
+    private val dictionaryDb by lazy { DictionaryDatabase.getDatabase(this) }
+    private val inventoryDb by lazy { InventoryDatabase.getDatabase(this) }
+    private val wordRepository by lazy { WordRepository(dictionaryDb.wordDao()) }
+    private val profileRepository by lazy { ProfileRepository(applicationContext,) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val channelId = "daily_reminder"
+        val channel = NotificationChannel(
+            channelId,
+            "Przypomnienia o nauce",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        manager.createNotificationChannel(channel)
+
         setContent {
             HiEnglishTheme {
-                HiEnglishApp(wordRepository, profileRepository)
+                HiEnglishApp(
+                    wordRepository,
+                    profileRepository,
+                    inventoryDb.storeDao()
+                )
             }
         }
     }
@@ -71,11 +92,27 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class) // Required for TopAppBar
 @Composable
-fun HiEnglishApp(wordRepository: WordRepository, profileRepository: ProfileRepository) {
+fun HiEnglishApp(
+    wordRepository: WordRepository,
+    profileRepository: ProfileRepository,
+    storeDao: StoreDao
+) {
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.EXERCISES) }
-    var points by rememberSaveable { mutableIntStateOf(123) }
-    var inventory by rememberSaveable { mutableStateOf(listOf("item_default_walls")) }
-    var equipped by rememberSaveable { mutableStateOf(EquippedItems()) }
+
+    androidx.activity.compose.BackHandler(enabled = currentDestination != AppDestinations.EXERCISES) {
+        currentDestination = AppDestinations.EXERCISES
+    }
+
+    val points by profileRepository.userPoints.collectAsState(initial = 0)
+
+    val storeViewModel: StoreViewModel = viewModel(
+        factory = StoreViewModelFactory(storeDao, profileRepository)
+    )
+
+    val storeItems by storeViewModel.storeItems.collectAsState(initial = emptyList())
+    val equippedItems by storeViewModel.equippedItems.collectAsState(initial = emptyMap())
+
+    val scope = rememberCoroutineScope()
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -111,7 +148,6 @@ fun HiEnglishApp(wordRepository: WordRepository, profileRepository: ProfileRepos
                         )
                     },
                     actions = {
-                        // This matches the Coin counter in the Figma design
                         PointsDisplay(points = points)
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -123,26 +159,17 @@ fun HiEnglishApp(wordRepository: WordRepository, profileRepository: ProfileRepos
         ) { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding)) {
                 when (currentDestination) {
-                    AppDestinations.SHOP -> ShopPage(
-                        points = points,
-                        inventory = inventory,
-                        onBuy = { item ->
-                            if (points >= item.cost && !inventory.contains(item.id)) {
-                                points -= item.cost
-                                inventory = inventory + item.id
-                                // You could add a Toast here: "Purchased item!"
-                            }
-                        })
+                    AppDestinations.SHOP -> StorePage(
+                        items = storeItems,
+                        points= points,
+                        onBuy = { item -> storeViewModel.handleItemClick(item, false) }
+                    )
 
                     AppDestinations.PET -> HouseScreen(
-                        inventory = inventory,
-                        equipped = equipped,
-                        onEquip = { itemId, category ->
-                            equipped = when (category) {
-                                "hats" -> equipped.copy(hat = itemId)
-                                "rooms" -> equipped.copy(background = itemId)
-                                else -> equipped
-                            }
+                        equippedMap = equippedItems,
+                        storeItems = storeItems,
+                        onEquipToggle = { item, isEquipped ->
+                            storeViewModel.handleItemClick(item, isEquipped)
                         }
                     )
 
@@ -150,12 +177,14 @@ fun HiEnglishApp(wordRepository: WordRepository, profileRepository: ProfileRepos
                         LearningModule(
                             wordRepository = wordRepository,
                             profileRepository = profileRepository,
-                            onAddPoints = { points += it }
                         )
                     }
 
                     AppDestinations.DICTIONARY -> DictionaryScreen()
-                    AppDestinations.SETTINGS -> SettingsScreen()
+                    AppDestinations.SETTINGS -> SettingsScreen(
+                        profileRepository,
+                        storeDao
+                    )
                 }
             }
         }
@@ -192,7 +221,7 @@ fun PointsDisplay(points: Int) {
 
 enum class AppDestinations(
     val label: String,
-    val icon: ImageVector, // Changed from iconId to use ImageVector directly
+    val icon: ImageVector // Changed from iconId to use ImageVector directly
 ) {
     SHOP("Shop", Icons.Outlined.ShoppingBag),
     PET("Pet", Icons.Outlined.Pets),

@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,34 +61,43 @@ fun ScrambledLettersScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            state.word.forEachIndexed { index, char ->
-                val typedChar = state.currentGuess.getOrNull(index)
-                Box(
+            state.word.forEachIndexed { index, _ ->
+                val slotInThisPosition = state.guessedSlots[index]
+
+                Surface(
+                    onClick = { slotInThisPosition?.let { onLetterClick(it) } },
+                    enabled = slotInThisPosition != null, // Klikalne tylko jeśli jest tam litera
                     modifier = Modifier
                         .weight(1f)
-                        .height(50.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(8.dp)
-                        ),
-                    contentAlignment = Alignment.Center
+                        .height(56.dp),
+                    color = if (slotInThisPosition != null)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    if (typedChar != null) {
-                        Text(
-                            text = typedChar.toString(),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    } else {
-                        // Kreska na dole dla nieuzupełnionej litery
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .fillMaxWidth(0.5f)
-                                .height(2.dp)
-                                .background(MaterialTheme.colorScheme.onSurfaceVariant)
-                                .padding(bottom = 8.dp)
-                        )
+                    Box(contentAlignment = Alignment.Center) {
+                        if (slotInThisPosition != null) {
+                            Text(
+                                text = slotInThisPosition.char.toString(),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        } else {
+                            // Kreska dla pustego pola
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 12.dp)
+                                    .fillMaxWidth(0.4f)
+                                    .height(3.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                        CircleShape
+                                    )
+                            )
+                        }
                     }
                 }
             }

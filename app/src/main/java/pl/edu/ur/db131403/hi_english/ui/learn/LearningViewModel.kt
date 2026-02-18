@@ -26,11 +26,8 @@ class LearningViewModel(
 
     fun startMatchGame(category: String? = null) {
         viewModelScope.launch {
-            // 1. Użyj .first(), aby pobrać aktualną listę z Flow (wymaga importu)
-            // Jeśli repozytorium zwraca Flow, musimy go "zebrać"
             val allWords = wordRepository.getAllA1Words().first()
 
-            // 2. Teraz allWords to zwykła List<WordEntity>, więc te funkcje działają:
             val filtered = if (category != null) {
                 allWords.filter { it.description?.contains(category, ignoreCase = true) == true }
             } else {
@@ -46,16 +43,80 @@ class LearningViewModel(
         }
     }
 
+    fun onMatchSelected(word: String, isEnglish: Boolean) {
+        val state = _currentGameState.value as? GameState.MatchingGame ?: return
+
+        // Jeśli kliknięty element jest już dopasowany, ignoruj
+        if (state.matchedKeys.contains(word) || state.pairs.values.contains(word) && state.matchedKeys.any { state.pairs[it] == word }) return
+
+        val newState = if (isEnglish) {
+            state.copy(selectedLeft = if (state.selectedLeft == word) null else word)
+        } else {
+            state.copy(selectedRight = if (state.selectedRight == word) null else word)
+        }
+
+        _currentGameState.value = newState
+        checkMatch(newState)
+    }
+
+    private fun checkMatch(state: GameState.MatchingGame) {
+        val left = state.selectedLeft
+        val right = state.selectedRight
+
+        if (left != null && right != null) {
+            if (state.pairs[left] == right) {
+                // Sukces: Dodaj do dopasowanych i wyczyść wybór
+                val newMatched = state.matchedKeys + left
+                val updatedState = state.copy(
+                    matchedKeys = newMatched,
+                    selectedLeft = null,
+                    selectedRight = null
+                )
+                _currentGameState.value = updatedState
+
+                // Jeśli wszystkie 4 pary odnalezione -> koniec zestawu
+                if (newMatched.size == state.pairs.size) {
+                    onMatchSetComplete()
+                }
+            } else {
+                viewModelScope.launch {
+                    kotlinx.coroutines.delay(500)
+                    _currentGameState.value = state.copy(selectedLeft = null, selectedRight = null)
+                }
+            }
+        }
+    }
+
+    private fun onMatchSetComplete() {
+        viewModelScope.launch {
+            tasksCompletedInSession++
+
+            // 4 punkty za każdy zestaw
+            val pointsToAdd = if (tasksCompletedInSession >= 20) {
+                4 + 5 // 4 za zestaw + 5 bonusu
+            } else {
+                4
+            }
+
+            profileRepository.addPoints(pointsToAdd)
+
+            if (tasksCompletedInSession >= 20) {
+                clearSession()
+                profileRepository.incrementGamesCompleted()
+            } else {
+                startMatchGame()
+            }
+        }
+    }
+
     fun startSpellGame() {
         viewModelScope.launch {
-            // Pobieramy słowa z bazy (używając .first() jak wcześniej)
             val allWords = wordRepository.getAllA1Words().first()
 
             if (allWords.isNotEmpty()) {
                 val target = allWords.random()
                 val wordToSpell = target.word.uppercase()
 
-                // Tworzymy listę slotów z literami
                 val slots = wordToSpell.mapIndexed { index, c ->
                     LetterSlot(id = index, char = c)
                 }.shuffled()
@@ -63,30 +124,65 @@ class LearningViewModel(
                 _currentGameState.value = GameState.ScrambledLetters(
                     word = wordToSpell,
                     translation = target.translationPl ?: "???",
-                    scrambledLetters = slots
+                    scrambledLetters = slots,
+                    guessedSlots = emptyMap()
                 )
             }
         }
     }
 
-    // Funkcja do obsługi kliknięcia litery
     fun onLetterClicked(slot: LetterSlot) {
         // Musimy rzutować stan na ScrambledLetters, aby mieć dostęp do jego pól
         val state = _currentGameState.value as? GameState.ScrambledLetters ?: return
 
-        if (!slot.isUsed) {
-            val newGuess = state.currentGuess + slot.char
+        val isAlreadyInWord = state.guessedSlots.values.any { it.id == slot.id }
 
-            // Tworzymy nową listę slotów, oznaczając kliknięty jako zużyty
-            val newSlots = state.scrambledLetters.map {
-                if (it.id == slot.id) it.copy(isUsed = true) else it
+        if (isAlreadyInWord) {
+            // --- LOGIKA USUWANIA ---
+            // Znajdź pozycję, na której znajduje się ten slot w odgadniętym słowie
+            val entryToRemove = state.guessedSlots.entries.find { it.value.id == slot.id }
+
+            if (entryToRemove != null) {
+                val newGuessedSlots = state.guessedSlots - entryToRemove.key
+                val newScrambledLetters = state.scrambledLetters.map {
+                    if (it.id == slot.id) it.copy(isUsed = false) else it
+                }
+
+                _currentGameState.value = state.copy(
+                    guessedSlots = newGuessedSlots,
+                    scrambledLetters = newScrambledLetters
+                )
+            }
+        } else {
+            // --- LOGIKA DODAWANIA ---
+            // Znajdź pierwszy wolny indeks w słowie docelowym
+            val firstEmptyIndex = (0 until state.word.length).firstOrNull {
+                !state.guessedSlots.containsKey(it)
             }
 
-            // Aktualizujemy stan całego obiektu
-            _currentGameState.value = state.copy(
-                currentGuess = newGuess,
-                scrambledLetters = newSlots
-            )
+            if (firstEmptyIndex != null) {
+                val newGuessedSlots = state.guessedSlots + (firstEmptyIndex to slot)
+                val newScrambledLetters = state.scrambledLetters.map {
+                    if (it.id == slot.id) it.copy(isUsed = true) else it
+                }
+
+                val updatedState = state.copy(
+                    guessedSlots = newGuessedSlots,
+                    scrambledLetters = newScrambledLetters
+                )
+                _currentGameState.value = updatedState
+
+                // Sprawdzenie wygranej (czy wszystkie sloty zajęte)
+                if (newGuessedSlots.size == state.word.length) {
+                    val finalWord = (0 until state.word.length)
+                        .map { newGuessedSlots[it]?.char ?: "" }
+                        .joinToString("")
+
+                    if (finalWord.equals(state.word, ignoreCase = true)) {
+                        onTaskSuccess()
+                    }
+                }
+            }
         }
     }
 
@@ -96,21 +192,27 @@ class LearningViewModel(
             tasksCompletedInSession++
 
             if (tasksCompletedInSession >= 20) {
-                // Bonus: 1 pkt za zadanie + 5 pkt za ukończenie zestawu = 6
-                profileRepository.addPoints(6)
-                tasksCompletedInSession = 0 // Resetujemy pasek postępu dla nowej lekcji
+                // Bonus: 1 pkt za zadanie + 5 pkt za ukończenie zestawu
+                profileRepository.addPoints(1 + 5)
+                clearSession()
+                profileRepository.incrementGamesCompleted()
             } else {
                 // Standardowa nagroda: 1 pkt za zadanie
                 profileRepository.addPoints(1)
+                startSpellGame()
             }
         }
     }
 
-    // Dodaj funkcję resetu, o którą prosiło UI
+    fun clearSession() {
+        tasksCompletedInSession = 0
+        _currentGameState.value = null
+    }
+
     fun resetSpellGame() {
         val state = _currentGameState.value as? GameState.ScrambledLetters ?: return
         _currentGameState.value = state.copy(
-            currentGuess = "",
+            guessedSlots = emptyMap(),
             scrambledLetters = state.scrambledLetters.map { it.copy(isUsed = false) }
         )
     }

@@ -6,12 +6,12 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
-import pl.edu.ur.db131403.hi_english.data.local.AppDatabase
+import pl.edu.ur.db131403.hi_english.data.local.DictionaryDatabase
 import pl.edu.ur.db131403.hi_english.data.local.WordEntity
 
 class WordViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val dao = AppDatabase.getDatabase(application).wordDao()
+    private val dao = DictionaryDatabase.getDatabase(application).wordDao()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()

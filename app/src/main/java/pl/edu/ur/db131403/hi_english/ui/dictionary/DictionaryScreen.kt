@@ -15,15 +15,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-import pl.edu.ur.db131403.hi_english.data.local.AppDatabase
 import pl.edu.ur.db131403.hi_english.data.local.WordEntity
-import kotlin.collections.emptyList
 
 @OptIn(ExperimentalFoundationApi::class) // Required for stickyHeader
 @Composable
@@ -194,7 +191,7 @@ fun WordInfoDialog(word: WordEntity, onDismiss: () -> Unit) {
 
                 // Opis
                 Text(
-                    text = word.description ?: "To słówko czeka na Twój opis!",
+                    text = word.description ?: "",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()

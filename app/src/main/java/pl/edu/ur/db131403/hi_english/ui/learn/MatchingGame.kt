@@ -1,27 +1,20 @@
 package pl.edu.ur.db131403.hi_english.ui.learn
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,97 +25,81 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun MatchingGameScreen(
     state: GameState.MatchingGame,
-    onMatchAttempt: (String, String) -> Unit
+    onMatchAttempt: (String, Boolean) -> Unit
 ) {
-    var selectedLeft by remember { mutableStateOf<String?>(null) }
-    var selectedRight by remember { mutableStateOf<String?>(null) }
+    val englishWords = remember(state.pairs) { state.pairs.keys.shuffled() }
+    val polishWords = remember(state.pairs) { state.pairs.values.shuffled() }
 
-    Row(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Angielskie słowa
-        Column(modifier = Modifier.weight(1f)) {
-            state.pairs.keys.forEach { word ->
-                val isMatched = state.matchedKeys.contains(word)
-                GameButton(
+    Row(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Kolumna Angielska
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            englishWords.forEach { word ->
+                MatchCard(
                     text = word,
-                    isSelected = selectedLeft == word,
-                    isMatched = isMatched,
-                    onClick = { selectedLeft = word }
+                    isSelected = state.selectedLeft == word,
+                    isMatched = state.matchedKeys.contains(word),
+                    onClick = { onMatchAttempt(word, true) }
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
-
-        // Polskie tłumaczenia (pomieszane)
-        val shuffledTranslations = remember(state.pairs) { state.pairs.values.shuffled() }
-        Column(modifier = Modifier.weight(1f)) {
-            shuffledTranslations.forEach { translation ->
-                val isMatched = state.matchedKeys.any { state.pairs[it] == translation }
-                GameButton(
-                    text = translation,
-                    isSelected = selectedRight == translation,
+        // Kolumna Polska
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            polishWords.forEach { word ->
+                val isMatched = state.matchedKeys.any { state.pairs[it] == word }
+                MatchCard(
+                    text = word,
+                    isSelected = state.selectedRight == word,
                     isMatched = isMatched,
-                    onClick = { selectedRight = translation }
+                    onClick = { onMatchAttempt(word, false) }
                 )
             }
-        }
-    }
-
-    // Automatyczna próba dopasowania po wybraniu obu stron
-    LaunchedEffect(selectedLeft, selectedRight) {
-        if (selectedLeft != null && selectedRight != null) {
-            onMatchAttempt(selectedLeft!!, selectedRight!!)
-            selectedLeft = null
-            selectedRight = null
         }
     }
 }
 
 @Composable
-fun GameButton(
+fun MatchCard(
     text: String,
     isSelected: Boolean,
     isMatched: Boolean,
     onClick: () -> Unit
 ) {
-    // Dynamiczna zmiana kolorów w zależności od stanu
-    val backgroundColor = when {
-        isMatched -> Color(0xFF4CAF50).copy(alpha = 0.2f) // Zielony dla dopasowanych
-        isSelected -> MaterialTheme.colorScheme.primaryContainer // Kolor zaznaczenia
-        else -> MaterialTheme.colorScheme.surface
-    }
-
     val borderColor = when {
-        isMatched -> Color(0xFF4CAF50)
+        isMatched -> Color.Transparent // Ukrywamy obramowanie dla dopasowanych
         isSelected -> MaterialTheme.colorScheme.primary
         else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
     }
 
-    val textColor = when {
-        isMatched -> Color(0xFF2E7D32)
-        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
+    val backgroundColor = when {
+        isMatched -> Color.LightGray.copy(alpha = 0.2f)
+        isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        else -> MaterialTheme.colorScheme.surface
     }
 
-    Card(
+    val contentColor = if (isMatched) Color.Gray else MaterialTheme.colorScheme.onSurface
+
+    Surface(
+        onClick = if (isMatched) ({}) else onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = backgroundColor,
+        border = BorderStroke(
+            width = if (isSelected) 3.dp else 1.dp,
+            color = borderColor
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .height(56.dp)
-            .clickable(enabled = !isMatched) { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(2.dp, borderColor),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor)
+            .height(70.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(contentAlignment = Alignment.Center) {
             Text(
                 text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isSelected || isMatched) FontWeight.Bold else FontWeight.Normal,
-                color = textColor,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                color = contentColor,
                 textAlign = TextAlign.Center
             )
         }

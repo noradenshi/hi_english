@@ -1,4 +1,4 @@
-package pl.edu.ur.db131403.hi_english.ui.shop
+package pl.edu.ur.db131403.hi_english.ui.store
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -31,7 +32,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -49,60 +49,58 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import pl.edu.ur.db131403.hi_english.data.model.ShopItem
+import pl.edu.ur.db131403.hi_english.data.model.StoreItem
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage // Import the Coil version
+import pl.edu.ur.db131403.hi_english.data.model.ItemCategories
 
 @Composable
-fun ShopPage(
+fun StorePage(
+    items: List<StoreItem>,
     points: Int,
-    inventory: List<String>,
-    onBuy: (ShopItem) -> Unit,
-    modifier: Modifier = Modifier,
-    viewModel: ShopViewModel = viewModel()
+    onBuy: (StoreItem) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val shopItems = viewModel.items // Get items from the repo via VM
     var selectedTab by remember { mutableStateOf("all") }
-    val categories = listOf("all" to "Wszystkie", "hats" to "Czapki", "rooms" to "Pokoje", "accessories" to "Dodatki")
+
+    val categories = remember {
+        listOf("all" to "Wszystko") + ItemCategories.all
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         ScrollableTabRow(
             selectedTabIndex = categories.indexOfFirst { it.first == selectedTab }.coerceAtLeast(0),
-            edgePadding = 16.dp,
+            edgePadding = 8.dp,
             containerColor = Color.Transparent,
             divider = {},
             indicator = {}
         ) {
             categories.forEach { (id, label) ->
-                val selected = selectedTab == id
-                Tab(
-                    selected = selected,
-                    onClick = { selectedTab = id },
-                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
+                val isSelected = selectedTab == id
+
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(100.dp))
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                        .clickable { selectedTab = id }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(100.dp),
-                        color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                        modifier = Modifier.height(36.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 16.dp)) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
 
-        val filteredItems = if (selectedTab == "all") {
-            shopItems
-        } else {
-            shopItems.filter { it.category == selectedTab }
-        }
+        val filteredItems = if (selectedTab == "all") items else items.filter { it.category == selectedTab }
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -110,15 +108,11 @@ fun ShopPage(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 3. Use the filtered list from the VM to populate items
-            items(
-                items = filteredItems,
-                key = { it.id } // Adding a key is best practice for list performance
-            ) { item ->
-                ShopItemCard(
+            items(items = filteredItems, key = { it.id }) { item ->
+                StoreItemCard(
                     item = item,
-                    isOwned = inventory.contains(item.id),
-                    canAfford = points >= item.cost,
+                    isOwned = item.isPurchased,
+                    canAfford = points >= item.price,
                     onBuy = { onBuy(item) }
                 )
             }
@@ -127,20 +121,33 @@ fun ShopPage(
 }
 
 @Composable
-fun ShopItemCard(
-    item: ShopItem,
+fun StoreItemCard(
+    item: StoreItem,
     isOwned: Boolean,
     canAfford: Boolean,
     onBuy: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    // Dynamiczne pobieranie ID zasobu na podstawie nazwy String z bazy
+    val imageResId = remember(item.imageResName) {
+        val resId = context.resources.getIdentifier(
+            item.imageResName,
+            "drawable",
+            context.packageName
+        )
+        if (resId != 0) resId else android.R.drawable.ic_menu_report_image // Fallback na ikonę systemową
+    }
+
     Card(
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isOwned) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surface
+        ),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Image Container
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -150,9 +157,9 @@ fun ShopItemCard(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = item.imageRes),
+                    painter = painterResource(id = imageResId),
                     contentDescription = item.name,
-                    modifier = Modifier.fillMaxSize(0.7f),
+                    modifier = Modifier.fillMaxSize(0.6f),
                     contentScale = ContentScale.Fit
                 )
 
@@ -161,60 +168,35 @@ fun ShopItemCard(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Owned",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(20.dp)
+                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(24.dp)
                     )
                 }
             }
 
             Spacer(Modifier.height(8.dp))
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Text(item.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Price Tag
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Outlined.MonetizationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = item.cost.toString(),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                if (!isOwned) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.MonetizationOn, null, Modifier.size(16.dp), MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(4.dp))
+                        Text(item.price.toString(), fontWeight = FontWeight.Bold)
+                    }
                 }
 
-                // Buy Button
                 Button(
                     onClick = onBuy,
                     enabled = !isOwned && canAfford,
-                    contentPadding = PaddingValues(horizontal = 12.dp),
-                    modifier = Modifier.height(32.dp),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isOwned) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary
-                    )
+                    modifier = Modifier.height(32.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp)
                 ) {
-                    Text(
-                        text = if (isOwned) "MAM" else "KUP",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.ExtraBold
-                    )
+                    Text(if (isOwned) "POSIADANE" else "KUP")
                 }
             }
         }
