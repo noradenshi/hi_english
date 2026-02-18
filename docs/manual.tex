@@ -1,0 +1,112 @@
+\documentclass[12pt,a4paper]{article}
+
+% --- Pakiety ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage[hidelinks]{hyperref} % hidelinks usuwa czerwone ramki
+\usepackage{titlesec}
+\usepackage{float} % Pozwala na użycie [H] do wymuszenia pozycji
+\usepackage{subcaption}
+\usepackage{xcolor}
+
+% --- Konfiguracja strony ---
+\geometry{margin=2.2cm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1em}
+
+% --- Komenda do wymuszania pozycji obrazów (Tekst -> Obrazy) ---
+\newcommand{\imagepair}[5]{
+    \begin{figure}[H] % [H] wymusza pozycję "TUTAJ"
+        \centering
+        \begin{subfigure}{0.48\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{screenshots/#1}
+            \caption{#2}
+        \end{subfigure}
+        \hfill
+        \begin{subfigure}{0.48\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{screenshots/#3}
+            \caption{#4}
+        \end{subfigure}
+        \caption{#5}
+    \end{figure}
+}
+
+\newcommand{\imagesingle}[3]{
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.45\textwidth]{screenshots/#1}
+        \caption{#2}
+        \label{fig:#3}
+    \end{figure}
+}
+
+\title{Manual Projektu \\ \textbf{Hi English}}
+\author{Dawid Bar}
+\date{Luty 2026}
+
+\begin{document}
+
+\maketitle
+\newpage
+\tableofcontents
+\vspace{2em}
+\listoffigures
+\newpage
+
+\section{Wstęp i Menu Główne}
+Aplikacja \textbf{Hi English} została utworzona aby zachęcić najmłodszych do nauki języka angielskiego. Domyślnym ekranem aplikacji jest ekran ćwiczeń, gdzie użytkownik widzi swój postęp w codziennym wyzwaniu ukończenia 5-ciu zadań, oraz listę dostępnych gier.
+
+\imagesingle{exercises.png}{Główny panel wyboru ćwiczeń}{exercises}
+
+\section{Moduły Gier Edukacyjnych}
+Dla użytkownika dostępne są dwie gry. \textit{Matching Game}, którego celem jest dopasowywanie w pary angielskich słów z ich polskimi tłumaczeniami, oraz \textit{Spelling Game}, gdzie należy ułożyć tłumaczenie na angielski polskiego słowa z rozsypanki liter.
+Gry nagradzają gracza za każdy etap, oraz za ukończenie całej serii 20-u zadań.
+
+\imagepair{matching_game.png}{Gra w dopasowywanie}{spelling_game.png}{Moduł pisowni}{Interfejsy gier edukacyjnych.}
+
+\section{System Słownika i Wyszukiwania}
+Słownik umożliwia użytkownikowi sprawdzenie definicji słów wykorzystywanych w zadaniach. Zapisany jest w lokalnej bazie danych SQLite. Można go na bieżąco przeszukiwać i używać liter na boku do "przeskakiwania" do słów na nią się zaczynających.
+Słowa można kliknąć by je podglądnąć.
+
+\imagepair{dictionary.png}{Widok słownika}{dictionary_search.png}{Filtrowanie słówek}{Podstawowe funkcje słownika.}
+
+\section{Dom i Sklep}
+Zwierzątko gracza oraz sklep mają za zadanie dać dziecku motywację do dalszej nauki.
+Punkty zdobyte w sekcji ćwiczeń mogą wymieniać na nowe przedmioty i zobaczyć swojego pupila w nowym wydaniu.
+
+\imagepair{pet.png}{Widok domu}{store.png}{Sklep z przedmiotami}{Personalizacja.}
+
+\section{Ustawienia}
+Aplikacja umożliwia użytkownikowi ustawienie powiadomień, które codziennie o wskazanej porze będą wysyłane jeżeli ten nie wykona wcześniej swojego codziennego zadania. Jeśli użytkownik zablokuje powiadomienia w systemie android, aplikacja wykrywa to przy próbie zmiany ustawień i wyświetla stosowny komunikat.
+
+\imagepair{settings.png}{Statystyki i ustawienia}{settings_notifications_blocked.png}{Alert o braku uprawnień}{Ekran ustawień.}
+
+\section{Panel Root}
+Sekcja Root jest chroniona hasłem (domyślnie: root123). Po zalogowaniu się administrator widzi dodatkowe opcje, które są ukryte przed zwykłym użytkownikiem, w tym podgląd stanu preferencji i możliwość edytowania podstawowych z nich.
+
+\imagepair{settings_root.png}{Ekran ustawień Root}{settings_root_extented.png}{Dalsza część ustawień Root}{Dostęp do funkcji specjalnych.}
+
+\subsection{Zarządzanie Słownikiem w Trybie Root}
+W trybie Root użytkownik może dowolnie edytować bazę słów. Można dodawać nowe i edytować lub usuwać już istniejące.
+
+\imagepair{dictionary_root_editview.png}{Aktywacja edycji}{dictionary_root_edit.png}{Formularz edycji słowa}{Narzędzia administracyjne słownika.}
+
+\subsection{Widoczność Słownictwa}
+Root ma również możliwość ukrywania słówek ze słownika - co również wyłącza je z użycia w grach. System zarządza flagami widoczności bezpośrednio w bazie danych Room.
+
+\imagepair{dictionary_root_hide.png}{Opcja ukrywania słowa}{dictionary_root_hidden.png}{Widok słów ukrytych}{Zarządzanie stanem widoczności elementów.}
+
+\subsection{Zarządzanie przedmiotami}
+Kolejną możliwością w tym trybie Root jest sprzedawanie przedmiotów. Zwykły użytkownik nie może pozbyć się raz nabytych rzeczy.
+
+\imagesingle{store_root.png}{Sprzedaż przedmiotów}{Sklep Root'a}
+
+\section{Podsumowanie}
+Projekt Hi English jest prostą aplikacją do nauki języka angielskiego. Umożliwia również administratorowi (w domyśle - rodzicowi) na zarządzanie słówkami jakie dziecko dostaje w swoich zadaniach. Tryb administratora również oferuje intuicyjne debugowanie aplikacji. 
+
+\end{document}

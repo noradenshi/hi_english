@@ -1,0 +1,11 @@
+\babel@toc {polish}{}\relax 
+\contentsline {section}{\numberline {1}Wstęp i Menu Główne}{3}{section.1}%
+\contentsline {section}{\numberline {2}Moduły Gier Edukacyjnych}{3}{section.2}%
+\contentsline {section}{\numberline {3}System Słownika i Wyszukiwania}{4}{section.3}%
+\contentsline {section}{\numberline {4}Dom i Sklep}{5}{section.4}%
+\contentsline {section}{\numberline {5}Ustawienia}{6}{section.5}%
+\contentsline {section}{\numberline {6}Panel Root}{7}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Zarządzanie Słownikiem w Trybie Root}{8}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Widoczność Słownictwa}{9}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Zarządzanie przedmiotami}{10}{subsection.6.3}%
+\contentsline {section}{\numberline {7}Podsumowanie}{11}{section.7}%

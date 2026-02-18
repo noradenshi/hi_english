@@ -24,7 +24,7 @@ class LearningViewModel(
 
     fun startMatchGame(category: String? = null) {
         viewModelScope.launch {
-            val allWords = wordRepository.getAllA1Words().first()
+            val allWords = wordRepository.getVisibleA1Words().first()
 
             val filtered = if (category != null) {
                 allWords.filter { it.description?.contains(category, ignoreCase = true) == true }
@@ -108,7 +108,7 @@ class LearningViewModel(
 
     fun startSpellGame() {
         viewModelScope.launch {
-            val allWords = wordRepository.getAllA1Words().first()
+            val allWords = wordRepository.getVisibleA1Words().first()
 
             if (allWords.isNotEmpty()) {
                 val target = allWords.random()

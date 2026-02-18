@@ -47,7 +47,6 @@ import androidx.compose.material.icons.outlined.Pets
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import pl.edu.ur.db131403.hi_english.data.local.DictionaryDatabase
 import pl.edu.ur.db131403.hi_english.data.local.InventoryDatabase
