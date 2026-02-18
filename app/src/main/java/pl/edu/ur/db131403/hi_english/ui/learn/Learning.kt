@@ -60,25 +60,15 @@ data class GameData(
     val id: String,
     val title: String,
     val description: String,
-    val imageUrl: String,
     val color: Color,
     val difficulty: String
 )
 
 val games = listOf(
-//    GameData(
-//        id = "memory",
-//        title = "Pamięć: Zwierzęta",
-//        description = "Dopasuj pary angielskich słówek do obrazków zwierząt.",
-//        imageUrl = "https://images.unsplash.com/photo-1544391443-177047971b94?w=200&h=200&fit=crop",
-//        color = Color(0xFFD0E4FF),
-//        difficulty = "Łatwy"
-//    ),
     GameData(
         id = "match",
         title = "Dopasuj Słowa",
         description = "Połącz w pary słowa z ich tłumaczeniami.",
-        imageUrl = "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=200&h=200&fit=crop",
         color = Color(0xFFC4EED0),
         difficulty = "Łatwy"
     ),
@@ -86,7 +76,6 @@ val games = listOf(
         id = "spell",
         title = "Mistrz Pisowni",
         description = "Ułóż słowo z rozsypanych liter alfabetu.",
-        imageUrl = "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=200&h=200&fit=crop",
         color = Color(0xFFFFDCC0),
         difficulty = "Średni"
     )
@@ -107,8 +96,6 @@ fun LearningModule(
     )
 
     val completedGames by profileRepository.gamesCompletedToday.collectAsState(initial = 0)
-
-    val progress = viewModel.tasksCompletedInSession / 20f
 
     val gameState by viewModel.currentGameState
     var selectedGameId by remember { mutableStateOf<String?>(null) }
@@ -242,7 +229,6 @@ fun DashboardLayout(onGameClick: (String) -> Unit, completedGames: Int) {
 
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Dostępne Gry", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-//            Text("Pokaż wszystko", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -268,7 +254,6 @@ fun GameTheater(
         when (gameId) {
             "match" -> viewModel.startMatchGame()
             "spell" -> viewModel.startSpellGame()
-            // "memory" -> viewModel.startPictureQuiz()
         }
     }
 
@@ -316,8 +301,7 @@ fun GameTheater(
                         onReset = { viewModel.resetSpellGame() }
                     )
                 }
-                null -> CircularProgressIndicator() // Ładowanie danych z bazy
-                else -> Text("Gra w budowie...")
+                null -> CircularProgressIndicator()
             }
         }
     }
@@ -401,7 +385,7 @@ fun DailyProgressCard(completedGames: Int) {
 
                 StatChip(
                     icon = if (isGoalReached) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-                    text = if (isGoalReached) "+20 punktów" else "Zdobądź 20 pkt",
+                    text = if (isGoalReached) "+20 punktów" else "Nagroda: 20 pkt",
                     color = if (isGoalReached) themeColor else null
                 )
             }

@@ -94,7 +94,6 @@ fun SwipeableWordItem(
             }
         },
         content = {
-            // Dodajemy przezroczystość, jeśli słowo jest ukryte
             Box(modifier = Modifier.graphicsLayer(alpha = if (word.isVisible) 1f else 0.5f)) {
                 WordItem(word, onClick)
             }
@@ -139,7 +138,6 @@ fun WordItem(
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                // Rząd z angielskim słowem i dymkami
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.Center
@@ -150,7 +148,6 @@ fun WordItem(
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Generowanie dymków POS
                     word.pos?.split(",")?.map { it.trim() }?.forEach { partOfSpeech ->
                         if (partOfSpeech.isNotEmpty()) {
                             PosBubble(partOfSpeech)
@@ -173,9 +170,8 @@ fun WordItem(
 fun PosTagRow(posString: String?, modifier: Modifier = Modifier) {
     val tags = posString?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
 
-    // Centrujemy dymki w poziomie
     FlowRow(
-        modifier = modifier.fillMaxWidth(), // Rozciągamy, aby Center zadziałało
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -183,7 +179,7 @@ fun PosTagRow(posString: String?, modifier: Modifier = Modifier) {
             Surface(
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.padding(horizontal = 3.dp) // Delikatny odstęp między dymkami
+                modifier = Modifier.padding(horizontal = 3.dp)
             ) {
                 Text(
                     text = tag,

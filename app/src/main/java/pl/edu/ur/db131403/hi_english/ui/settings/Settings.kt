@@ -190,7 +190,7 @@ fun SettingsScreen(
                             if (status == android.content.pm.PackageManager.PERMISSION_GRANTED) {
                                 profileRepository.setNotificationsEnabled(true)
                             } else {
-                                // URUCHAMIAMY PROŚBĘ O UPRAWNIENIA
+                                // Prośba o uprawnienia
                                 permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                             }
                         } else {
@@ -198,7 +198,6 @@ fun SettingsScreen(
                             profileRepository.setNotificationsEnabled(true)
                         }
                     } else {
-                        // Wyłączanie zawsze dozwolone
                         profileRepository.setNotificationsEnabled(false)
                     }
                 }

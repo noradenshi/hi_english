@@ -16,7 +16,6 @@ class NotificationWorker(
 ) : Worker(context, workerParams) {
 
     override fun doWork(): Result {
-        // Logika sprawdzająca, czy użytkownik dziś ćwiczył
         val prefs = applicationContext.getSharedPreferences("user_data", Context.MODE_PRIVATE)
         val gamesToday = prefs.getInt("games_today", 0)
 
@@ -30,13 +29,11 @@ class NotificationWorker(
         val channelId = "daily_reminder"
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Intent wskazujący na MainActivity
         val intent = Intent(applicationContext, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            putExtra("navigate_to", "exercises") // Przekazujemy cel podróży
+            putExtra("navigate_to", "exercises")
         }
 
-        // Opakowujemy go w PendingIntent
         val pendingIntent = PendingIntent.getActivity(
             applicationContext,
             0,

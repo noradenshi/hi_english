@@ -66,8 +66,6 @@ fun HouseScreen(
     val equippedScarf = storeItems.find { it.id == equippedMap[ItemCategories.SCARF] }
     val equippedSweater = storeItems.find { it.id == equippedMap[ItemCategories.SWEATER] }
 
-    val context = androidx.compose.ui.platform.LocalContext.current
-
     Box(modifier = Modifier.fillMaxSize()) {
         // --- WARSTWA 1: TŁO (WALL_SKIN) ---
         if (equippedWall != null) {

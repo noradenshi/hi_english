@@ -16,12 +16,10 @@ class LearningViewModel(
     private val wordRepository: WordRepository,
     private val profileRepository: ProfileRepository
 ) : ViewModel() {
-    // Stan postępu w aktualnej lekcji (0 do 20)
     var tasksCompletedInSession by mutableIntStateOf(0)
         private set
 
     private val _currentGameState = mutableStateOf<GameState?>(null)
-    // Teraz State<GameState?> będzie rozpoznawane poprawnie
     val currentGameState: State<GameState?> = _currentGameState
 
     fun startMatchGame(category: String? = null) {
@@ -65,7 +63,6 @@ class LearningViewModel(
 
         if (left != null && right != null) {
             if (state.pairs[left] == right) {
-                // Sukces: Dodaj do dopasowanych i wyczyść wybór
                 val newMatched = state.matchedKeys + left
                 val updatedState = state.copy(
                     matchedKeys = newMatched,
@@ -132,7 +129,7 @@ class LearningViewModel(
     }
 
     fun onLetterClicked(slot: LetterSlot) {
-        // Musimy rzutować stan na ScrambledLetters, aby mieć dostęp do jego pól
+        // Rzutowanie na ScrambledLetters, aby mieć dostęp do jego pól
         val state = _currentGameState.value as? GameState.ScrambledLetters ?: return
 
         val isAlreadyInWord = state.guessedSlots.values.any { it.id == slot.id }
@@ -172,7 +169,7 @@ class LearningViewModel(
                 )
                 _currentGameState.value = updatedState
 
-                // Sprawdzenie wygranej (czy wszystkie sloty zajęte)
+                // Sprawdzenie wygranej
                 if (newGuessedSlots.size == state.word.length) {
                     val finalWord = (0 until state.word.length)
                         .map { newGuessedSlots[it]?.char ?: "" }
@@ -186,7 +183,7 @@ class LearningViewModel(
         }
     }
 
-    // Funkcja wywoływana, gdy użytkownik poprawnie rozwiąże zadanie (np. ułoży słowo)
+    // Funkcja wywoływana, gdy użytkownik poprawnie rozwiąże zadanie
     fun onTaskSuccess() {
         viewModelScope.launch {
             tasksCompletedInSession++

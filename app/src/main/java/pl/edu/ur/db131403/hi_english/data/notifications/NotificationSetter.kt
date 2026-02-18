@@ -24,7 +24,6 @@ import pl.edu.ur.db131403.hi_english.data.repository.ProfileRepository
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationSetter(profileRepository: ProfileRepository) {
-    val context = LocalContext.current
     var showTimePicker by remember { mutableStateOf(false) }
 
     val currentTime by profileRepository.notificationTime.collectAsState(initial = "14:00")

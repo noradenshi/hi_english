@@ -74,7 +74,6 @@ class WordViewModel(private val wordRepository: WordRepository) : ViewModel() {
         }
     }
 
-    // Fabryka do ręcznego tworzenia ViewModelu z parametrem
     class Factory(private val repository: WordRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return WordViewModel(repository) as T

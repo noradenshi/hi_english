@@ -7,6 +7,6 @@ import kotlinx.parcelize.Parcelize
 
 @Entity(tableName = "equipped_items")
 data class EquippedItem(
-    @PrimaryKey val category: String, // "HAT", "PET_SKIN", "GLASSES", itd.
-    val itemId: Int // ID przedmiotu z tabeli StoreItem
+    @PrimaryKey val category: String,
+    val itemId: Int
 )

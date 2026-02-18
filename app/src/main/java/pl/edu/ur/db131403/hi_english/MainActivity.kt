@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class) // Required for TopAppBar
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HiEnglishApp(
     wordRepository: WordRepository,
@@ -117,17 +117,14 @@ fun HiEnglishApp(
     val storeItems by storeViewModel.storeItems.collectAsState(initial = emptyList())
     val equippedItems by storeViewModel.equippedItems.collectAsState(initial = emptyMap())
 
-    val scope = rememberCoroutineScope()
-
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             AppDestinations.entries.forEach {
                 item(
                     icon = {
                         Icon(
-                            imageVector = it.icon, // Using the Outlined ImageVector
+                            imageVector = it.icon,
                             contentDescription = it.label,
-                            // Use onSurfaceVariant for unselected, onSecondaryContainer for selected
                             tint = if (currentDestination == it)
                                 MaterialTheme.colorScheme.onSecondaryContainer
                             else
@@ -207,14 +204,14 @@ fun PointsDisplay(points: Int) {
     Surface(
         modifier = Modifier.padding(end = 16.dp),
         color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = RoundedCornerShape(100.dp) // Fully rounded like Figma
+        shape = RoundedCornerShape(100.dp)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Outlined.MonetizationOn, // Or a custom Coin icon
+                imageVector = Icons.Outlined.MonetizationOn,
                 contentDescription = "Points",
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
@@ -232,7 +229,7 @@ fun PointsDisplay(points: Int) {
 
 enum class AppDestinations(
     val label: String,
-    val icon: ImageVector // Changed from iconId to use ImageVector directly
+    val icon: ImageVector
 ) {
     SHOP("Shop", Icons.Outlined.ShoppingBag),
     PET("Pet", Icons.Outlined.Pets),

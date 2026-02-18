@@ -16,8 +16,6 @@ class StoreViewModel(
     private val storeDao: StoreDao,
     private val profileRepository: ProfileRepository
 ) : ViewModel() {
-
-    // Łączymy Flow z przedmiotami i Flow z ekwipunkiem
     val storeItems = storeDao.getAllStoreItems()
     val equippedItems = storeDao.getEquippedItems().map { list ->
         list.associate { it.category to it.itemId }
@@ -29,7 +27,6 @@ class StoreViewModel(
 
     private fun checkAndSeedDatabase() {
         viewModelScope.launch {
-            // Pobieramy listę raz, żeby sprawdzić czy jest pusta
             val currentItems = storeDao.getAllStoreItems().firstOrNull() ?: emptyList()
 
             if (currentItems.isEmpty()) {
@@ -39,7 +36,22 @@ class StoreViewModel(
     }
 
     suspend fun seedDatabase() {
+        val freePet = StoreItem(
+            name = "Brązowy Pies",
+            category = ItemCategories.PET_SKIN,
+            price = 0,
+            isPurchased = true,
+            imageResName = "dog_brown"
+        )
+
         val initialItems = listOf(
+            freePet,
+            StoreItem(
+                name = "Łaciaty Pies",
+                category = ItemCategories.PET_SKIN,
+                price = 400,
+                imageResName = "dog_dotted"
+            ),
             StoreItem(
                 name = "Szary Kot",
                 category = ItemCategories.PET_SKIN,
@@ -51,19 +63,6 @@ class StoreViewModel(
                 category = ItemCategories.PET_SKIN,
                 price = 300,
                 imageResName = "cat_orange"
-            ),
-            StoreItem(
-                name = "Brązowy Pies",
-                category = ItemCategories.PET_SKIN,
-                price = 0,
-                isPurchased = true,
-                imageResName = "dog_brown"
-            ),
-            StoreItem(
-                name = "Łaciaty Pies",
-                category = ItemCategories.PET_SKIN,
-                price = 400,
-                imageResName = "dog_dotted"
             ),
 
             StoreItem(
@@ -121,6 +120,8 @@ class StoreViewModel(
 
         )
         storeDao.insertInitialItems(initialItems)
+
+        storeDao.equipItem(EquippedItem(freePet.category, 1))
     }
 
     fun handleItemClick(item: StoreItem, isEquipped: Boolean) {

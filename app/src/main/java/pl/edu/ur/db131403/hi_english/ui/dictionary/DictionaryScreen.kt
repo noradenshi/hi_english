@@ -97,8 +97,6 @@ fun DictionaryScreen(
                             modifier = Modifier.fillMaxSize()
                         ) {
                             groupedWords.forEach { (initial, wordsInGroup) ->
-                                // THE INDICATOR: Sticky Header for each letter
-
                                 stickyHeader {
                                     Surface(
                                         modifier = Modifier.fillMaxWidth(),
@@ -133,7 +131,6 @@ fun DictionaryScreen(
                         }
                     }
 
-                    // Alphabet Slider
                     Column(
                         modifier = Modifier
                             .fillMaxHeight()
@@ -174,7 +171,6 @@ fun DictionaryScreen(
                         }
                     }
 
-                    // Show the popup if a word is selected
                     selectedWord?.let { word ->
                         WordInfoDialog(
                             word = word,
@@ -229,13 +225,11 @@ fun WordInfoDialog(word: WordEntity, onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text("Cool!") }
         },
         shape = RoundedCornerShape(24.dp),
-        // Używamy 'text' jako głównego kontenera, aby mieć pełną kontrolę nad układem
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(), // To usuwa pustą przestrzeń po prawej
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Ikona/Obrazek
                 Icon(
                     imageVector = Icons.Outlined.AutoStories,
                     contentDescription = null,
@@ -245,7 +239,6 @@ fun WordInfoDialog(word: WordEntity, onDismiss: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Słowo angielskie
                 Text(
                     text = word.word.replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.headlineMedium,
@@ -253,14 +246,11 @@ fun WordInfoDialog(word: WordEntity, onDismiss: () -> Unit) {
                     textAlign = TextAlign.Center
                 )
 
-                // NOWOŚĆ: Dymki części mowy (POS)
-                // Wykorzystujemy stworzony wcześniej komponent
                 PosTagRow(
                     posString = word.pos,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
 
-                // Tłumaczenie
                 Text(
                     text = word.translationPl ?: "???",
                     style = MaterialTheme.typography.titleLarge,
@@ -270,7 +260,6 @@ fun WordInfoDialog(word: WordEntity, onDismiss: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Opis
                 Text(
                     text = word.description ?: "",
                     style = MaterialTheme.typography.bodyLarge,
@@ -280,7 +269,6 @@ fun WordInfoDialog(word: WordEntity, onDismiss: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Poziom CEFR
                 Surface(
                     color = MaterialTheme.colorScheme.tertiaryContainer,
                     shape = RoundedCornerShape(8.dp)

@@ -7,8 +7,8 @@ import androidx.room.PrimaryKey
 data class StoreItem(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String,
-    val category: String, // np. "HAT", "GLASSES"
+    val category: String,
     val price: Int,
-    val imageResName: String, // nazwa zasobu w drawable
+    val imageResName: String,
     val isPurchased: Boolean = false
 )

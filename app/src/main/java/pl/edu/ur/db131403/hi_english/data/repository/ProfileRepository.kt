@@ -34,12 +34,11 @@ class ProfileRepository(private val context: Context) {
     val isRootAuthenticated: Flow<Boolean> = _isRootAuthenticated
 
     init {
-        // Resetujemy stan Root przy każdym uruchomieniu aplikacji (init repozytorium)
+        // Reset Root przy każdym uruchomieniu aplikacji
         setRootAuthenticated(false)
         checkAndResetDailyProgress()
     }
 
-    // Ta funkcja jest teraz jedynym źródłem prawdy o czasie
     fun addMinuteOfStudy() {
         val current = prefs.getInt("daily_minutes", 0)
         val newTotal = current + 1
@@ -129,22 +128,12 @@ class ProfileRepository(private val context: Context) {
         if (lastUpdate < resetBoundary.timeInMillis) {
             prefs.edit {
                 putInt("games_today", 0)
-                putInt("daily_minutes", 0) // Resetujemy czas nauki
+                putInt("daily_minutes", 0)
                 putLong("last_daily_reset_millis", System.currentTimeMillis())
             }
             _gamesCompletedFlow.value = 0
             dailyMinutes.value = 0
         }
-    }
-
-    fun resetDailyProgress() {
-        prefs.edit {
-            putInt("games_today", 0)
-            putInt("last_session_min", 0)
-            putLong("last_daily_reset_millis", System.currentTimeMillis())
-        }
-        _gamesCompletedFlow.value = 0
-        dailyMinutes.value = 0
     }
 
     private val _notificationsEnabled = MutableStateFlow(prefs.getBoolean("notifications_enabled", false))
@@ -186,7 +175,7 @@ class ProfileRepository(private val context: Context) {
 
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-            .setRequiresBatteryNotLow(false) // Pozwól działać nawet przy słabej baterii
+            .setRequiresBatteryNotLow(false)
             .build()
 
         val dailyWorkRequest = PeriodicWorkRequestBuilder<NotificationWorker>(24, TimeUnit.HOURS)
@@ -197,7 +186,7 @@ class ProfileRepository(private val context: Context) {
 
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "daily_reminder",
-            ExistingPeriodicWorkPolicy.REPLACE, // Bardzo ważne: UPDATE zamiast KEEP, by odświeżyć godzinę
+            ExistingPeriodicWorkPolicy.REPLACE, // UPDATE zamiast KEEP, by odświeżyć godzinę
             dailyWorkRequest
         )
     }
